@@ -1,0 +1,622 @@
+import { useState, useEffect, useRef } from "react";
+
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const SECTIONS = [
+  { id:"exterior", title:"Exterior / Entrada", icon:"🏠", items:[
+    {id:1,label:"Exterior limpio en todo momento (chequeo cada 2 horas)",p:"L"},
+    {id:2,label:"Puertas limpias (sin fingerprints)",p:"L"},
+  ]},
+  { id:"interior", title:"Interior / Presentación", icon:"💡", items:[
+    {id:3,label:"Lámparas de interior funcionando color correcto",p:"L"},
+    {id:4,label:"No polvo en conductos de aire acondicionado",p:"L"},
+    {id:5,label:"Salón limpio sin acumulación de dust, telas de arañas",p:"L"},
+    {id:6,label:"Safacones de basuras en buen estado y limpios",p:"L"},
+    {id:7,label:"High Chairs en buen estado y limpias",p:"L"},
+    {id:8,label:"Server Station organizada, limpia, no objetos personales",p:"M"},
+  ]},
+  { id:"banos", title:"Baños", icon:"🚿", items:[
+    {id:9,label:"Limpios y en buen estado",p:"H"},
+    {id:10,label:"Suministros completos",p:"H"},
+    {id:11,label:"Log de baños firmado correctamente",p:"M"},
+    {id:12,label:"Espejos y paredes libres de grafittis o stickers",p:"M"},
+  ]},
+  { id:"hostess", title:"Hostess / Cajera", icon:"👋", items:[
+    {id:13,label:"Área limpia y organizada",p:"L"},
+    {id:14,label:"Menús limpios y organizados por idioma",p:"L"},
+    {id:15,label:"Hostess camina cliente a la mesa",p:"M"},
+    {id:16,label:"Hostess abre menú y es cordial",p:"M"},
+  ]},
+  { id:"salon", title:"Salón / Mesas", icon:"🍽️", items:[
+    {id:17,label:"Mesas con set up correcto (todas idénticas)",p:"M"},
+    {id:18,label:"1 set de cubiertos por silla",p:"M"},
+    {id:19,label:"Cubiertos hacia arriba / cuchillo hacia adentro",p:"M"},
+    {id:20,label:"Salero/pimienta + menú postre centrado",p:"L"},
+    {id:21,label:"Tapas de ketchup y A1 limpias",p:"M"},
+  ]},
+  { id:"servicio", title:"Servicio", icon:"🤝", items:[
+    {id:22,label:"Uso de bandejas (nada en la mano)",p:"M"},
+    {id:23,label:"Meseros ofrecen especiales",p:"M"},
+    {id:24,label:"Meseros ofrecen appetizers",p:"M"},
+    {id:25,label:"Meseros ofrecen postres",p:"M"},
+  ]},
+  { id:"cafeteria", title:"Cafetería", icon:"☕", items:[
+    {id:26,label:"Countdown en Toast actualizado",p:"M"},
+    {id:27,label:"Countdown coincide con productos físicos",p:"M"},
+    {id:28,label:"Presentación correcta en warmers",p:"M"},
+    {id:29,label:"No producto viejo o vencido en exhibición",p:"H"},
+    {id:30,label:"Uniforme correcto del personal de cafetería",p:"M"},
+    {id:31,label:"Name tag visible y correcto",p:"M"},
+    {id:32,label:"Área de cafetería limpia y organizada (interior)",p:"L"},
+    {id:33,label:"Área de cafetería limpia y organizada (exterior)",p:"L"},
+    {id:34,label:"Mesas y counters limpios",p:"L"},
+    {id:35,label:"Refrigerador de sodas limpio y organizado",p:"L"},
+    {id:36,label:"Jugueras limpias y en buen estado",p:"L"},
+    {id:37,label:"Exhibidor de cigarros y tabacos limpio y organizado",p:"L"},
+    {id:38,label:"Control de 30 Minutos visible y completo",p:"M"},
+  ]},
+  { id:"uniformes", title:"Uniformes (FOH)", icon:"👕", items:[
+    {id:39,label:"Guayabera / María Bonita blanca en buen estado",p:"M"},
+    {id:40,label:"Name tag visible (La Carreta legible)",p:"M"},
+    {id:41,label:"Nombre real (no nickname / símbolos)",p:"M"},
+    {id:42,label:"Pantalón correcto (NO leggings)",p:"M"},
+    {id:43,label:"Zapatos anti-slip",p:"M"},
+    {id:44,label:"Pelo recogido",p:"M"},
+    {id:45,label:"Uñas naturales (no acrílico)",p:"M"},
+    {id:46,label:"No tatuajes visibles",p:"M"},
+    {id:47,label:"No piercings (facial, nariz, lengua)",p:"M"},
+  ]},
+  { id:"manager", title:"Manager / Oficina", icon:"📋", items:[
+    {id:48,label:"Uniforme correcto de manager (guayabera aprobada)",p:"M"},
+    {id:49,label:"Entrega checklist apertura (últimas 4 semanas)",p:"M"},
+    {id:50,label:"Entrega checklist cierre (últimas 4 semanas)",p:"M"},
+    {id:51,label:"Entrega checklist limpieza (últimas 4 semanas)",p:"M"},
+    {id:52,label:"Entrega Log de Baños (últimas 4 semanas)",p:"M"},
+    {id:53,label:"Control de todas las áreas (Figure 8)",p:"M"},
+    {id:54,label:"Line up antes de las 11 AM",p:"H"},
+    {id:55,label:"Chequeo de baños constante según log",p:"M"},
+    {id:56,label:"Chequeo de cafetería cada 30 minutos",p:"M"},
+  ]},
+  { id:"limpieza", title:"Limpieza General", icon:"🧹", items:[
+    {id:57,label:"Pantry limpio y organizado",p:"L"},
+    {id:58,label:"Lunchera limpia y organizada",p:"L"},
+    {id:59,label:"Cafetería limpia y organizada",p:"L"},
+    {id:60,label:"Bar limpio y organizado",p:"L"},
+    {id:61,label:"Salón limpio y organizado",p:"L"},
+    {id:62,label:"Take out limpio y organizado",p:"L"},
+  ]},
+  { id:"walkin", title:"Walk-in Coolers & Freezers", icon:"🧊", items:[
+    {id:63,label:"No productos en el piso",p:"H"},
+    {id:64,label:"Productos tapados",p:"H"},
+    {id:65,label:"Productos fechados",p:"H"},
+    {id:66,label:"No contaminación cruzada",p:"H"},
+    {id:67,label:"No latas abiertas con producto",p:"H"},
+    {id:68,label:"Estantes limpios sin mold",p:"M"},
+    {id:69,label:"Paredes internas limpias sin mold",p:"M"},
+    {id:70,label:"Gaskets en buenas condiciones limpios",p:"M"},
+  ]},
+  { id:"cocina", title:"Cocina – Control Operativo", icon:"👨‍🍳", items:[
+    {id:71,label:"Pars correctas en freidoras",p:"H"},
+    {id:72,label:"Pars correctas en el salteado",p:"H"},
+    {id:73,label:"Pars correctas en la plancha",p:"H"},
+    {id:74,label:"Temperaturas de freidoras correctas",p:"H"},
+    {id:75,label:"Slicer Machine limpia después de cada uso",p:"M"},
+    {id:76,label:"Peso de la Ropa Vieja",p:"M"},
+    {id:77,label:"Peso de Vaca Frita",p:"M"},
+    {id:78,label:"Peso de Vegetales",p:"M"},
+    {id:79,label:"Peso de Vegetales de salteado",p:"M"},
+    {id:80,label:"Peso del hígado",p:"M"},
+    {id:81,label:"Peso de masita de puerco",p:"M"},
+    {id:82,label:"Peso de masita de mero",p:"M"},
+    {id:83,label:"Peso del calamar",p:"M"},
+    {id:84,label:"Peso de camarón para tostones",p:"M"},
+  ]},
+  { id:"lunchera", title:"Lunchera / Pantry", icon:"🥙", items:[
+    {id:85,label:"Peso correcto Media Noche (10oz–11oz)",p:"M"},
+    {id:86,label:"Peso correcto Sandwich Cubano (14oz–15oz)",p:"M"},
+    {id:87,label:"Peso correcto Sandwich Especial (15oz–16oz)",p:"M"},
+    {id:88,label:"Peso correcto Caesar Salad (5oz)",p:"M"},
+    {id:89,label:"Peso correcto ensalada acompañante (4oz)",p:"M"},
+    {id:90,label:"Uso obligatorio de balanza",p:"H"},
+    {id:91,label:"Chequear si hay batidos almacenados",p:"M"},
+    {id:92,label:"Chequear corte de tomates (8 slices por tomate)",p:"M"},
+    {id:93,label:"Productos fechados y rotados",p:"H"},
+    {id:94,label:"No latas abiertas con productos adentro",p:"M"},
+    {id:95,label:"Sanitizing Bucket en uso",p:"M"},
+  ]},
+  { id:"dish", title:"Dishwasher / Sanitación", icon:"🫧", items:[
+    {id:96,label:"Químicos correctos",p:"H"},
+    {id:97,label:"Agua cambiada mínimo 2 veces por turno",p:"H"},
+    {id:98,label:"Área de dishwasher organizada y bajo control",p:"M"},
+    {id:99,label:"Temperatura del agua",p:"H"},
+    {id:100,label:"Safacones de basura con tapas magnéticas",p:"M"},
+    {id:101,label:"3 Compartment Sink con soluciones correctas",p:"H"},
+  ]},
+  { id:"bar", title:"Service Bar", icon:"🍹", items:[
+    {id:102,label:"Uso de jiggers",p:"H"},
+    {id:103,label:"Soda gun limpio sin acumulación de mold",p:"M"},
+    {id:104,label:"Uso de scoop para el hielo",p:"M"},
+    {id:105,label:"Speed rail con licores aprobados (limpio y organizado)",p:"M"},
+    {id:106,label:"Refrigerador de sodas limpio, organizado",p:"L"},
+    {id:107,label:"Refrigerador de cervezas limpio, organizado",p:"L"},
+    {id:108,label:"Sanitizing Bucket en uso",p:"M"},
+    {id:109,label:"Libro de recetas accesible para el bartender",p:"L"},
+    {id:110,label:"Estantes de vinos organizados y limpios",p:"L"},
+    {id:111,label:"Uniforme del bartender (guayabera, nametag, pantalones)",p:"M"},
+  ]},
+  { id:"equipos", title:"Equipos / Dry Storage", icon:"⚙️", items:[
+    {id:112,label:"Máquina de hielo limpia (sin mold)",p:"H"},
+    {id:113,label:"Neveras y freezers en temperatura correctas",p:"H"},
+    {id:114,label:"Dry storage organizado",p:"L"},
+    {id:115,label:"Todo producto con labels",p:"M"},
+  ]},
+  { id:"inventarios", title:"Inventarios", icon:"📦", items:[
+    {id:116,label:"Variantes de proteínas revisadas",p:"H"},
+    {id:117,label:"Variantes de Bakery",p:"H"},
+    {id:118,label:"Variante de cigarros y tabacos",p:"H"},
+    {id:119,label:"Variantes de croquetas revisadas",p:"H"},
+  ]},
+];
+
+const PRI = { H:{label:"Alta",bg:"#fef2f2",color:"#991b1b",border:"#fca5a5"},
+               M:{label:"Media",bg:"#fffbeb",color:"#92400e",border:"#fcd34d"},
+               L:{label:"Baja",bg:"#f8fafc",color:"#475569",border:"#cbd5e1"} };
+
+const TODAY = new Date().toISOString().split("T")[0];
+
+function getDiscStatus(checks) {
+  const allItems = SECTIONS.flatMap(s => s.items);
+  const fH = allItems.filter(i => i.p==="H" && checks[i.id]===false).length;
+  const fM = allItems.filter(i => i.p==="M" && checks[i.id]===false).length;
+  const alerts = [];
+  if (fH >= 5)      alerts.push({ level:"danger", msg:`🔴 Final Warning + Action Plan — ${fH} fallas de alta prioridad` });
+  else if (fH >= 3) alerts.push({ level:"warning", msg:`🟡 Warning Manager on Duty — ${fH} fallas de alta prioridad` });
+  if (fM >= 10)     alerts.push({ level:"danger", msg:`🔴 Warning — ${fM} fallas de prioridad media` });
+  else if (fM >= 5) alerts.push({ level:"info", msg:`🟡 Coaching requerido — ${fM} fallas de prioridad media` });
+  return { alerts, fH, fM };
+}
+
+// ── COMPONENTS ────────────────────────────────────────────────────────────────
+
+function Badge({ p }) {
+  const s = PRI[p];
+  return (
+    <span style={{ fontSize:10, padding:"2px 6px", borderRadius:20, fontWeight:600,
+      background:s.bg, color:s.color, border:`1px solid ${s.border}`, whiteSpace:"nowrap" }}>
+      {s.label}
+    </span>
+  );
+}
+
+function AlertBanner({ level, msg }) {
+  const colors = {
+    danger: { bg:"#fef2f2", border:"#fca5a5", color:"#991b1b" },
+    warning:{ bg:"#fffbeb", border:"#fcd34d", color:"#92400e" },
+    info:   { bg:"#eff6ff", border:"#93c5fd", color:"#1e40af" },
+  };
+  const c = colors[level];
+  return (
+    <div style={{ background:c.bg, border:`1px solid ${c.border}`, borderRadius:10,
+      padding:"10px 14px", margin:"0 0 8px", color:c.color, fontSize:13, fontWeight:500 }}>
+      {msg}
+    </div>
+  );
+}
+
+function ItemRow({ item, check, nota, photos, onChange, onNota, onPhoto, onDeletePhoto }) {
+  const fileRef = useRef();
+  const isFail = check === false;
+  const isPass = check === true;
+
+  return (
+    <div style={{ padding:"10px 14px", borderBottom:"1px solid #f1f5f9",
+      background: isFail ? "#fff5f5" : "#fff" }}>
+      <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+        <span style={{ fontSize:11, color:"#94a3b8", minWidth:22, paddingTop:2 }}>#{item.id}</span>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:13, color:"#1e293b", lineHeight:1.4, display:"flex", gap:6, alignItems:"flex-start", flexWrap:"wrap" }}>
+            {item.label} <Badge p={item.p} />
+          </div>
+          <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
+            <button onClick={() => onChange(item.id, isPass ? null : true)}
+              style={{ padding:"5px 12px", borderRadius:8, border:"1px solid",
+                borderColor: isPass ? "#16a34a" : "#e2e8f0",
+                background: isPass ? "#dcfce7" : "#f8fafc",
+                color: isPass ? "#15803d" : "#64748b",
+                fontSize:12, fontWeight:600, cursor:"pointer" }}>
+              ✓ Pasa
+            </button>
+            <button onClick={() => onChange(item.id, isFail ? null : false)}
+              style={{ padding:"5px 12px", borderRadius:8, border:"1px solid",
+                borderColor: isFail ? "#dc2626" : "#e2e8f0",
+                background: isFail ? "#fee2e2" : "#f8fafc",
+                color: isFail ? "#dc2626" : "#64748b",
+                fontSize:12, fontWeight:600, cursor:"pointer" }}>
+              ✗ Falla
+            </button>
+            <button onClick={() => fileRef.current.click()}
+              style={{ padding:"5px 10px", borderRadius:8, border:"1px solid #e2e8f0",
+                background:"#f8fafc", color:"#64748b", fontSize:12, cursor:"pointer" }}
+              title="Agregar foto">
+              📷
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment"
+              style={{ display:"none" }} onChange={e => onPhoto(item.id, e)} />
+          </div>
+          {isFail && (
+            <textarea value={nota||""} onChange={e => onNota(item.id, e.target.value)}
+              placeholder="Nota / acción correctiva..." rows={2}
+              style={{ width:"100%", marginTop:8, borderRadius:8, border:"1px solid #e2e8f0",
+                padding:"7px 10px", fontSize:12, color:"#334155", resize:"none",
+                fontFamily:"inherit", background:"#fffbfb", boxSizing:"border-box" }} />
+          )}
+          {photos && photos.length > 0 && (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
+              {photos.map((src, pi) => (
+                <div key={pi} style={{ position:"relative" }}>
+                  <img src={src} alt="foto" style={{ width:54, height:54, objectFit:"cover",
+                    borderRadius:8, border:"1px solid #e2e8f0" }} />
+                  <button onClick={() => onDeletePhoto(item.id, pi)}
+                    style={{ position:"absolute", top:-4, right:-4, width:16, height:16,
+                      borderRadius:"50%", background:"#dc2626", color:"#fff", border:"none",
+                      fontSize:9, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ section, checks, notas, photos, onChange, onNota, onPhoto, onDeletePhoto }) {
+  const [open, setOpen] = useState(true);
+  const fails = section.items.filter(i => checks[i.id] === false).length;
+  const hasH = section.items.some(i => i.p==="H");
+  const hasM = section.items.some(i => i.p==="M");
+
+  return (
+    <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
+      marginBottom:10, overflow:"hidden",
+      borderLeft: fails > 0 ? "3px solid #dc2626" : "3px solid transparent" }}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px",
+          cursor:"pointer", userSelect:"none", background: open ? "#fafafa" : "#fff" }}>
+        <span style={{ fontSize:18 }}>{section.icon}</span>
+        <span style={{ flex:1, fontSize:13, fontWeight:600, color:"#1e293b" }}>{section.title}</span>
+        {fails > 0
+          ? <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20, background:"#fee2e2",
+              color:"#991b1b", fontWeight:600 }}>{fails} falla{fails>1?"s":""}</span>
+          : <span style={{ fontSize:11, padding:"2px 8px", borderRadius:20,
+              background: hasH?"#fef2f2":hasM?"#fffbeb":"#f8fafc",
+              color: hasH?"#991b1b":hasM?"#92400e":"#64748b", fontWeight:500 }}>
+              {hasH?"Alta":hasM?"Media":"Baja"}
+            </span>
+        }
+        <span style={{ fontSize:12, color:"#94a3b8", transform: open?"rotate(180deg)":"none",
+          transition:"transform .2s" }}>▼</span>
+      </div>
+      {open && (
+        <div style={{ borderTop:"1px solid #f1f5f9" }}>
+          {section.items.map(item => (
+            <ItemRow key={item.id} item={item}
+              check={checks[item.id]}
+              nota={notas[item.id]}
+              photos={photos[item.id]}
+              onChange={onChange}
+              onNota={onNota}
+              onPhoto={onPhoto}
+              onDeletePhoto={onDeletePhoto} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+export default function App() {
+  const [view, setView]       = useState("form");
+  const [fecha, setFecha]     = useState(TODAY);
+  const [manager, setManager] = useState("");
+  const [turno, setTurno]     = useState("AM");
+  const [checks, setChecks]   = useState({});
+  const [notas, setNotas]     = useState({});
+  const [photos, setPhotos]   = useState({});
+  const [history, setHistory] = useState([]);
+  const [toast, setToast]     = useState(null);
+
+  // Load persisted data
+  useEffect(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem("lc_draft")||"null");
+      if (d) { setFecha(d.fecha||TODAY); setManager(d.manager||""); setTurno(d.turno||"AM");
+               setChecks(d.checks||{}); setNotas(d.notas||{}); setPhotos(d.photos||{}); }
+      const h = JSON.parse(localStorage.getItem("lc_hist")||"[]");
+      setHistory(h);
+    } catch(e) {}
+  }, []);
+
+  // Auto-save draft
+  useEffect(() => {
+    try { localStorage.setItem("lc_draft", JSON.stringify({fecha,manager,turno,checks,notas,photos})); }
+    catch(e) {}
+  }, [fecha,manager,turno,checks,notas,photos]);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),2500); };
+
+  const handleCheck = (id, val) => {
+    setChecks(p => { const n={...p}; val===null ? delete n[id] : n[id]=val; return n; });
+  };
+  const handleNota = (id, val) => setNotas(p => ({...p,[id]:val}));
+  const handlePhoto = (id, e) => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPhotos(p => ({...p,[id]:[...(p[id]||[]),ev.target.result]}));
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+  const handleDeletePhoto = (id, idx) => setPhotos(p => ({...p,[id]:p[id].filter((_,i)=>i!==idx)}));
+
+  const totalItems = SECTIONS.reduce((a,s)=>a+s.items.length,0);
+  const answered   = Object.keys(checks).length;
+  const pct        = totalItems ? Math.round(answered/totalItems*100) : 0;
+  const { alerts, fH, fM } = getDiscStatus(checks);
+
+  const saveInspection = () => {
+    if (!manager.trim()) { showToast("⚠️ Ingresa el Manager on Duty"); return; }
+    const snap = { fecha, manager, turno, checks:{...checks}, notas:{...notas},
+                   photos:{...photos}, savedAt:new Date().toISOString() };
+    const newHist = [snap, ...history].slice(0, 50);
+    setHistory(newHist);
+    try { localStorage.setItem("lc_hist", JSON.stringify(newHist)); } catch(e){}
+    // Reset
+    setChecks({}); setNotas({}); setPhotos({}); setFecha(TODAY); setManager(""); setTurno("AM");
+    showToast("✅ Inspección guardada");
+  };
+
+  const buildEmailBody = () => {
+    const allItems = SECTIONS.flatMap(s=>s.items);
+    const failedH = allItems.filter(i=>i.p==="H"&&checks[i.id]===false);
+    const failedM = allItems.filter(i=>i.p==="M"&&checks[i.id]===false);
+    const failedL = allItems.filter(i=>i.p==="L"&&checks[i.id]===false);
+    let body = `INSPECCIÓN OPERATIVA – LA CARRETA\n`;
+    body += `Fecha: ${fecha}  |  Turno: ${turno}  |  Manager: ${manager||"N/A"}\n`;
+    body += `─────────────────────────────────────\n\n`;
+    body += `ESTADO DISCIPLINARIO\n`;
+    if (fH>=5) body+=`🔴 FINAL WARNING + ACTION PLAN: ${fH} fallas alta prioridad\n`;
+    else if (fH>=3) body+=`🟡 WARNING Manager on Duty: ${fH} fallas alta prioridad\n`;
+    else body+=`✅ Alta prioridad: ${fH} fallas (OK)\n`;
+    if (fM>=10) body+=`🔴 WARNING: ${fM} fallas prioridad media\n`;
+    else if (fM>=5) body+=`🟡 COACHING requerido: ${fM} fallas prioridad media\n`;
+    else body+=`✅ Prioridad media: ${fM} fallas (OK)\n`;
+    body += `\n`;
+    const fmt = (arr, title) => {
+      if (!arr.length) return "";
+      let t = `${title} (${arr.length})\n`;
+      arr.forEach(i => {
+        t += `  #${i.id} ${i.label}`;
+        if (notas[i.id]) t += `\n        Nota: ${notas[i.id]}`;
+        t += `\n`;
+      });
+      return t + "\n";
+    };
+    body += fmt(failedH, "🔴 FALLAS — ALTA PRIORIDAD");
+    body += fmt(failedM, "🟡 FALLAS — PRIORIDAD MEDIA");
+    body += fmt(failedL, "⚪ FALLAS — BAJA PRIORIDAD");
+    if (!failedH.length&&!failedM.length&&!failedL.length) body += "Sin fallas registradas.\n";
+    return body;
+  };
+
+  const sendEmail = () => {
+    if (!manager.trim()) { showToast("⚠️ Ingresa el Manager on Duty"); return; }
+    const subject = encodeURIComponent(`Inspección La Carreta – ${fecha} – Turno ${turno}`);
+    const body    = encodeURIComponent(buildEmailBody());
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  // ── RENDER ──
+  const tabStyle = (active) => ({
+    flex:1, padding:"7px 0", fontSize:12, fontWeight:600, border:"1px solid",
+    borderColor: active ? "#b91c1c" : "#e2e8f0",
+    background: active ? "#b91c1c" : "#fff",
+    color: active ? "#fff" : "#64748b",
+    borderRadius:8, cursor:"pointer", transition:"all .15s"
+  });
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#f1f5f9", fontFamily:"'DM Sans',system-ui,sans-serif" }}>
+      {/* HEADER */}
+      <div style={{ background:"#b91c1c", padding:"16px 16px 0", position:"sticky", top:0, zIndex:50,
+        boxShadow:"0 2px 12px rgba(185,28,28,.35)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+          <div style={{ width:38, height:38, borderRadius:10, background:"rgba(255,255,255,.2)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🥘</div>
+          <div>
+            <div style={{ fontSize:16, fontWeight:700, color:"#fff", letterSpacing:"-.3px" }}>La Carreta</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,.75)", letterSpacing:".06em", textTransform:"uppercase" }}>Inspección Operativa</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:6, paddingBottom:12 }}>
+          {[["form","✏️ Inspección"],["resumen","📊 Resumen"],["historial","🕑 Historial"]].map(([v,lbl])=>(
+            <button key={v} onClick={()=>setView(v)} style={tabStyle(view===v)}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{ position:"fixed", top:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+          background:"#1e293b", color:"#fff", padding:"10px 18px", borderRadius:20, fontSize:13,
+          fontWeight:500, boxShadow:"0 4px 20px rgba(0,0,0,.25)", whiteSpace:"nowrap" }}>
+          {toast}
+        </div>
+      )}
+
+      {/* ── FORM VIEW ── */}
+      {view==="form" && (
+        <div style={{ padding:"12px 12px 100px" }}>
+          {/* Meta */}
+          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"14px 16px", marginBottom:10 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:".08em", marginBottom:5 }}>Fecha</div>
+                <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
+                  style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:13, color:"#1e293b" }} />
+              </div>
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:".08em", marginBottom:5 }}>Turno</div>
+                <div style={{ display:"flex", gap:4 }}>
+                  {["AM","MID","PM"].map(t=>(
+                    <button key={t} onClick={()=>setTurno(t)}
+                      style={{ flex:1, padding:"8px 0", borderRadius:8, border:"1px solid",
+                        borderColor: turno===t?"#b91c1c":"#e2e8f0",
+                        background: turno===t?"#b91c1c":"#f8fafc",
+                        color: turno===t?"#fff":"#64748b",
+                        fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:600, color:"#64748b", textTransform:"uppercase", letterSpacing:".08em", marginBottom:5 }}>Manager on Duty</div>
+              <input type="text" value={manager} onChange={e=>setManager(e.target.value)}
+                placeholder="Nombre del manager..."
+                style={{ width:"100%", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 10px", fontSize:13, color:"#1e293b", boxSizing:"border-box" }} />
+            </div>
+            {/* Progress */}
+            <div style={{ marginTop:12 }}>
+              <div style={{ background:"#f1f5f9", borderRadius:4, height:6, overflow:"hidden" }}>
+                <div style={{ height:"100%", background:"#b91c1c", width:`${pct}%`, borderRadius:4, transition:"width .3s" }} />
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:5, fontSize:12, color:"#64748b" }}>
+                <span>{answered} / {totalItems} evaluados</span>
+                <span>{pct}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Discipline alerts */}
+          {alerts.map((a,i)=><AlertBanner key={i} level={a.level} msg={a.msg}/>)}
+
+          {/* Sections */}
+          {SECTIONS.map(s=>(
+            <SectionCard key={s.id} section={s}
+              checks={checks} notas={notas} photos={photos}
+              onChange={handleCheck} onNota={handleNota}
+              onPhoto={handlePhoto} onDeletePhoto={handleDeletePhoto} />
+          ))}
+        </div>
+      )}
+
+      {/* ── RESUMEN VIEW ── */}
+      {view==="resumen" && (
+        <div style={{ padding:"12px 12px 100px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+            {[
+              ["Sin evaluar", totalItems-answered, "#64748b"],
+              ["Total fallas", SECTIONS.flatMap(s=>s.items).filter(i=>checks[i.id]===false).length, "#dc2626"],
+              ["Fallas Alta", fH, "#dc2626"],
+              ["Fallas Media", fM, "#d97706"],
+            ].map(([lbl,val,col])=>(
+              <div key={lbl} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, padding:"12px 14px" }}>
+                <div style={{ fontSize:24, fontWeight:700, color:col }}>{val}</div>
+                <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{lbl}</div>
+              </div>
+            ))}
+          </div>
+          {alerts.map((a,i)=><AlertBanner key={i} level={a.level} msg={a.msg}/>)}
+          {["H","M","L"].map(p=>{
+            const title = {H:"🔴 Alta Prioridad",M:"🟡 Prioridad Media",L:"⚪ Baja Prioridad"}[p];
+            const items = SECTIONS.flatMap(s=>s.items.filter(i=>i.p===p&&checks[i.id]===false)
+              .map(i=>({...i,sec:s.title})));
+            if(!items.length) return null;
+            return (
+              <div key={p} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, marginBottom:10, overflow:"hidden" }}>
+                <div style={{ padding:"10px 14px", borderBottom:"1px solid #f1f5f9", fontSize:12, fontWeight:600, color:"#64748b" }}>
+                  {title} ({items.length})
+                </div>
+                {items.map(i=>(
+                  <div key={i.id} style={{ padding:"10px 14px", borderBottom:"1px solid #f8fafc" }}>
+                    <div style={{ fontSize:11, color:"#94a3b8" }}>{i.sec} · #{i.id}</div>
+                    <div style={{ fontSize:13, color:"#1e293b", marginTop:2 }}>{i.label}</div>
+                    {notas[i.id]&&<div style={{ fontSize:12, color:"#64748b", fontStyle:"italic", marginTop:4 }}>"{notas[i.id]}"</div>}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {SECTIONS.flatMap(s=>s.items).filter(i=>checks[i.id]===false).length===0 && (
+            <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748b" }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+              <div style={{ fontSize:15, fontWeight:600 }}>Sin fallas registradas</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── HISTORIAL VIEW ── */}
+      {view==="historial" && (
+        <div style={{ padding:"12px 12px 40px" }}>
+          {!history.length && (
+            <div style={{ textAlign:"center", padding:"48px 20px", color:"#94a3b8" }}>
+              <div style={{ fontSize:36, marginBottom:12 }}>🕑</div>
+              <div style={{ fontSize:14 }}>No hay inspecciones guardadas</div>
+            </div>
+          )}
+          {history.map((h,idx)=>{
+            const allItems = SECTIONS.flatMap(s=>s.items);
+            const hfH = allItems.filter(i=>i.p==="H"&&h.checks[i.id]===false).length;
+            const hfM = allItems.filter(i=>i.p==="M"&&h.checks[i.id]===false).length;
+            const hfL = allItems.filter(i=>i.p==="L"&&h.checks[i.id]===false).length;
+            const discLevel = hfH>=5||hfM>=10?"danger":hfH>=3||hfM>=5?"warning":"ok";
+            const discLabel = hfH>=5?"Final Warning":hfH>=3?"Warning":hfM>=10?"Warning Med":hfM>=5?"Coaching":"OK";
+            const discColors = {danger:{bg:"#fee2e2",c:"#991b1b"},warning:{bg:"#fffbeb",c:"#92400e"},ok:{bg:"#f0fdf4",c:"#15803d"}};
+            const dc = discColors[discLevel];
+            return (
+              <div key={idx} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:12,
+                padding:"14px 16px", marginBottom:8, cursor:"pointer" }}
+                onClick={()=>{ setChecks(h.checks||{}); setNotas(h.notas||{}); setPhotos(h.photos||{});
+                  setFecha(h.fecha); setManager(h.manager); setTurno(h.turno); setView("form"); }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#1e293b" }}>{h.manager||"Sin manager"} · {h.turno}</div>
+                    <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{h.fecha}</div>
+                  </div>
+                  <span style={{ fontSize:11, padding:"3px 9px", borderRadius:20, fontWeight:600,
+                    background:dc.bg, color:dc.c }}>{discLabel}</span>
+                </div>
+                <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                  {hfH>0&&<span style={{ fontSize:11,padding:"2px 7px",borderRadius:20,background:"#fee2e2",color:"#991b1b",fontWeight:500 }}>{hfH} Alta</span>}
+                  {hfM>0&&<span style={{ fontSize:11,padding:"2px 7px",borderRadius:20,background:"#fffbeb",color:"#92400e",fontWeight:500 }}>{hfM} Media</span>}
+                  {hfL>0&&<span style={{ fontSize:11,padding:"2px 7px",borderRadius:20,background:"#f8fafc",color:"#64748b",fontWeight:500 }}>{hfL} Baja</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* BOTTOM BAR */}
+      {view !== "historial" && (
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"#fff",
+          borderTop:"1px solid #e2e8f0", padding:"10px 16px", display:"flex", gap:8, zIndex:50 }}>
+          <button onClick={saveInspection}
+            style={{ flex:1, padding:"11px", borderRadius:10, border:"1px solid #e2e8f0",
+              background:"#f8fafc", color:"#1e293b", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+            💾 Guardar
+          </button>
+          <button onClick={sendEmail}
+            style={{ flex:1, padding:"11px", borderRadius:10, border:"none",
+              background:"#b91c1c", color:"#fff", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+            ✉️ Enviar reporte
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
